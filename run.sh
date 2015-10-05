@@ -36,8 +36,7 @@ fi
 AWSEB_ROOT="$WERCKER_STEP_ROOT/eb-cli"
 AWSEB_TOOL="$AWSEB_ROOT/bin/eb"
 
-#mkdir -p "/home/ubuntu/.elasticbeanstalk/"
-mkdir -p "/home/ubuntu/.aws"
+mkdir -p "$HOME/.aws"
 mkdir -p "$WERCKER_SOURCE_DIR/.elasticbeanstalk/"
 if [ $? -ne "0" ]
 then
@@ -47,8 +46,8 @@ fi
 debug "Change back to the source dir.";
 cd $WERCKER_SOURCE_DIR
 
-AWSEB_CREDENTIAL_FILE="/home/ubuntu/.aws/aws_credential_file"
-AWSEB_CONFIG_FILE="/home/ubuntu/.aws/config"
+AWSEB_CREDENTIAL_FILE="$HOME/.aws/aws_credential_file"
+AWSEB_CONFIG_FILE="$HOME/.aws/config"
 AWSEB_EB_CONFIG_FILE="$WERCKER_SOURCE_DIR/.elasticbeanstalk/config.yml"
 
 debug "Setting up credentials."
@@ -57,7 +56,7 @@ AWSAccessKeyId=$WERCKER_ELASTIC_BEANSTALK_DEPLOY_KEY
 AWSSecretKey=$WERCKER_ELASTIC_BEANSTALK_DEPLOY_SECRET
 EOT
 
-debug "Setting up donfig file."
+debug "Setting up config file."
 cat <<EOT >> $AWSEB_CONFIG_FILE
 [default]
 output = json
@@ -67,23 +66,6 @@ region = $WERCKER_ELASTIC_BEANSTALK_DEPLOY_REGION
 aws_access_key_id = $WERCKER_ELASTIC_BEANSTALK_DEPLOY_KEY
 aws_secret_access_key = $WERCKER_ELASTIC_BEANSTALK_DEPLOY_SECRET
 EOT
-
-debug "Setting up eb config file."
-cat <<EOT >> $AWSEB_EB_CONFIG_FILE
-branch-defaults:
-  $WERCKER_GIT_BRANCH:
-    environment: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_ENV_NAME
-global:
-  application_name: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_APP_NAME
-  default_platform: 64bit Amazon Linux 2014.03 v1.0.0 running Ruby 2.1 (Puma)
-  default_region: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_REGION
-  profile: eb-cli
-  sc: git
-EOT
-if [ $? -ne "0" ]
-then
-    fail "Unable to set up config file."
-fi
 
 if [ -n "$WERCKER_ELASTIC_BEANSTALK_DEPLOY_DEBUG" ]
 then
