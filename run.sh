@@ -33,11 +33,13 @@ then
     warn "Debug mode turned on, this can dump potentially dangerous information to log files."
 fi
 
-AWSEB_ROOT="$WERCKER_STEP_ROOT/eb-cli"
-AWSEB_TOOL="$AWSEB_ROOT/bin/eb"
+echo 'Synchronizing References in apt-get...'
+sudo apt-get update
 
-#mkdir -p "/home/ubuntu/.elasticbeanstalk/"
-mkdir -p "/home/ubuntu/.aws"
+echo 'Installing pip...'
+sudo apt-get install -y python-pip awsebcli
+
+mkdir -p "$HOME/.aws"
 mkdir -p "$WERCKER_SOURCE_DIR/.elasticbeanstalk/"
 if [ $? -ne "0" ]
 then
@@ -47,8 +49,7 @@ fi
 debug "Change back to the source dir.";
 cd $WERCKER_SOURCE_DIR
 
-AWSEB_CREDENTIAL_FILE="/home/ubuntu/.aws/aws_credential_file"
-AWSEB_CONFIG_FILE="/home/ubuntu/.aws/config"
+AWSEB_CREDENTIAL_FILE="$HOME/.aws/aws_credential_file"
 AWSEB_EB_CONFIG_FILE="$WERCKER_SOURCE_DIR/.elasticbeanstalk/config.yml"
 
 debug "Setting up credentials."
@@ -57,46 +58,17 @@ AWSAccessKeyId=$WERCKER_ELASTIC_BEANSTALK_DEPLOY_KEY
 AWSSecretKey=$WERCKER_ELASTIC_BEANSTALK_DEPLOY_SECRET
 EOT
 
-debug "Setting up donfig file."
-cat <<EOT >> $AWSEB_CONFIG_FILE
-[default]
-output = json
-region = $WERCKER_ELASTIC_BEANSTALK_DEPLOY_REGION
-
-[profile eb-cli]
-aws_access_key_id = $WERCKER_ELASTIC_BEANSTALK_DEPLOY_KEY
-aws_secret_access_key = $WERCKER_ELASTIC_BEANSTALK_DEPLOY_SECRET
-EOT
-
-debug "Setting up eb config file."
-cat <<EOT >> $AWSEB_EB_CONFIG_FILE
-branch-defaults:
-  $WERCKER_GIT_BRANCH:
-    environment: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_ENV_NAME
-global:
-  application_name: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_APP_NAME
-  default_platform: 64bit Amazon Linux 2014.03 v1.0.0 running Ruby 2.1 (Puma)
-  default_region: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_REGION
-  profile: eb-cli
-  sc: git
-EOT
-if [ $? -ne "0" ]
-then
-    fail "Unable to set up config file."
-fi
-
 if [ -n "$WERCKER_ELASTIC_BEANSTALK_DEPLOY_DEBUG" ]
 then
     debug "Dumping config file."
     cat $AWSEB_CREDENTIAL_FILE
-    cat $AWSEB_CONFIG_FILE
     cat $AWSEB_EB_CONFIG_FILE
 fi
 
-$AWSEB_TOOL use $WERCKER_ELASTIC_BEANSTALK_DEPLOY_ENV_NAME || fail "EB is not working or is not set up correctly."
+eb use $WERCKER_ELASTIC_BEANSTALK_DEPLOY_ENV_NAME || fail "EB is not working or is not set up correctly."
 
 debug "Checking if eb exists and can connect."
-$AWSEB_TOOL status
+eb status
 if [ $? -ne "0" ]
 then
     fail "EB is not working or is not set up correctly."
@@ -106,6 +78,6 @@ debug "Pushing to AWS eb servers."
 
 set -e
 
-$AWSEB_TOOL deploy --timeout 25
+eb deploy --timeout 25
 
 success 'Successfully pushed to Amazon Elastic Beanstalk'

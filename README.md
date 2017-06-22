@@ -15,7 +15,7 @@
 ```yml
 deploy:
     steps:
-        - mrono/elastic-beanstalk-deploy:
+        - hotakasaito/elastic-beanstalk-deploy:
             key: $AMAZON_KEY
             secret: $AMAZON_SECRET_KEY
             app_name: My Application
