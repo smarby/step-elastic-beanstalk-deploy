@@ -37,7 +37,13 @@ echo 'Synchronizing References in apt-get...'
 sudo apt-get update
 
 echo 'Installing pip...'
-sudo apt-get install -y python-pip awsebcli
+sudo apt-get install -y python-pip libpython-all-dev
+
+echo 'Installing awscli...'
+sudo pip install awsebcli
+
+echo 'eb version show...'
+eb --version
 
 mkdir -p "$HOME/.aws"
 mkdir -p "$WERCKER_SOURCE_DIR/.elasticbeanstalk/"
@@ -49,19 +55,27 @@ fi
 debug "Change back to the source dir.";
 cd $WERCKER_SOURCE_DIR
 
-AWSEB_CREDENTIAL_FILE="$HOME/.aws/aws_credential_file"
 AWSEB_EB_CONFIG_FILE="$WERCKER_SOURCE_DIR/.elasticbeanstalk/config.yml"
 
-debug "Setting up credentials."
-cat <<EOT >> $AWSEB_CREDENTIAL_FILE
-AWSAccessKeyId=$WERCKER_ELASTIC_BEANSTALK_DEPLOY_KEY
-AWSSecretKey=$WERCKER_ELASTIC_BEANSTALK_DEPLOY_SECRET
-EOT
+debug "Setting up eb config..."
+
+cat <<EOF >> $AWSEB_EB_CONFIG_FILE
+branch-defaults:
+  default:
+    environment: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_ENV_NAME
+  $WERCKER_GIT_BRANCH:
+    environment: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_ENV_NAME
+global:
+  application_name: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_APP_NAME
+  default_platform: 64bit Amazon Linux 2014.03 v1.0.0 running Ruby 2.1 (Puma)
+  default_region: $WERCKER_ELASTIC_BEANSTALK_DEPLOY_REGION
+  profile: null
+  sc: git
+EOF
 
 if [ -n "$WERCKER_ELASTIC_BEANSTALK_DEPLOY_DEBUG" ]
 then
     debug "Dumping config file."
-    cat $AWSEB_CREDENTIAL_FILE
     cat $AWSEB_EB_CONFIG_FILE
 fi
 
