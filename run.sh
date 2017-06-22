@@ -103,6 +103,9 @@ then
 fi
 
 debug "Pushing to AWS eb servers."
-$AWSEB_TOOL deploy || true # catach timeout
+
+set -e
+
+$AWSEB_TOOL deploy --timeout 25
 
 success 'Successfully pushed to Amazon Elastic Beanstalk'
